@@ -7,6 +7,9 @@ int main(int argc, char* argv[]){
 	int ret_val;
 	ret_val = myfunction(buf);
 	printf(1, "Return value: 0x%x\n", ret_val);
+
+	printf(1, "Current process ID: %d\n", getpid());
+	printf(1, "Parent process ID: %d\n", getppid());
 	exit();
 };
 
