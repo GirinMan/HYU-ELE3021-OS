@@ -1,4 +1,4 @@
-cscope 15 /mnt/c/Users/USER/repos/os/xv6-public               0000275571
+cscope 15 /mnt/c/Users/USER/repos/os/xv6-public               0000275735
 	@asm.h
 
 5 
@@ -10647,7 +10647,7 @@ $SYS_ex™
 
 
 20 
-$T_SYSCALL
+$T_y›ld
 
 
 21 
@@ -18468,6 +18468,18 @@ i
 	}
 }
 
+21 
+	$sys_y›ld
+(){
+
+22 
+	`y›ld
+();
+
+24 
+	}
+}
+
 	@printf.c
 
 1 
@@ -24608,161 +24620,171 @@ sys_myfunùiÚ
 sys_g‘µid
 ();
 
-109 (*
+108 
+sys_y›ld
+();
+
+110 (*
 sysÿÎs
 [])() = {
 
-110 [
+111 [
 SYS_fÜk
 ] 
 sys_fÜk
 ,
 
-111 [
+112 [
 SYS_ex™
 ] 
 sys_ex™
 ,
 
-112 [
+113 [
 SYS_wa™
 ] 
 sys_wa™
 ,
 
-113 [
+114 [
 SYS_pe
 ] 
 sys_pe
 ,
 
-114 [
+115 [
 SYS_»ad
 ] 
 sys_»ad
 ,
 
-115 [
+116 [
 SYS_kžl
 ] 
 sys_kžl
 ,
 
-116 [
+117 [
 SYS_exec
 ] 
 sys_exec
 ,
 
-117 [
+118 [
 SYS_f¡©
 ] 
 sys_f¡©
 ,
 
-118 [
+119 [
 SYS_chdœ
 ] 
 sys_chdœ
 ,
 
-119 [
+120 [
 SYS_dup
 ] 
 sys_dup
 ,
 
-120 [
+121 [
 SYS_g‘pid
 ] 
 sys_g‘pid
 ,
 
-121 [
+122 [
 SYS_sbrk
 ] 
 sys_sbrk
 ,
 
-122 [
+123 [
 SYS_¦“p
 ] 
 sys_¦“p
 ,
 
-123 [
+124 [
 SYS_u±ime
 ] 
 sys_u±ime
 ,
 
-124 [
+125 [
 SYS_Ý’
 ] 
 sys_Ý’
 ,
 
-125 [
+126 [
 SYS_wr™e
 ] 
 sys_wr™e
 ,
 
-126 [
+127 [
 SYS_mknod
 ] 
 sys_mknod
 ,
 
-127 [
+128 [
 SYS_uÆšk
 ] 
 sys_uÆšk
 ,
 
-128 [
+129 [
 SYS_lšk
 ] 
 sys_lšk
 ,
 
-129 [
+130 [
 SYS_mkdœ
 ] 
 sys_mkdœ
 ,
 
-130 [
+131 [
 SYS_þo£
 ] 
 sys_þo£
 ,
 
-131 [
+132 [
 SYS_myfunùiÚ
 ] 
 sys_myfunùiÚ
 ,
 
-132 [
+133 [
 SYS_g‘µid
 ] 
 sys_g‘µid
 ,
 
-133 
+134 [
+SYS_y›ld
+] 
+sys_y›ld
+,
+
+135 
 	}
 };
 
-136 
+138 
 	$sysÿÎ
 ()
 
-138 
+140 
 num
 ;
 
-139 
+141 
 ´oc
  *
 cu½roc
@@ -24770,7 +24792,7 @@ cu½roc
 	`my´oc
 ();
 
-141 
+143 
 num
  = 
 cu½roc
@@ -24780,7 +24802,7 @@ tf
 —x
 ;
 
-142 if(
+144 if(
 num
  > 0 &&‚um < 
 	`NELEM
@@ -24788,7 +24810,7 @@ num
 sysÿÎs
 ) && syscalls[num]) {
 
-143 
+145 
 cu½roc
 ->
 tf
@@ -24800,11 +24822,11 @@ sysÿÎs
 num
 ]();
 
-145 
+147 
 	`ýrštf
 ("%d %s: unknown sys call %d\n",
 
-146 
+148 
 cu½roc
 ->
 pid
@@ -24814,7 +24836,7 @@ pid
 num
 );
 
-147 
+149 
 cu½roc
 ->
 tf
@@ -24822,7 +24844,7 @@ tf
 —x
  = -1;
 
-149 
+151 
 	}
 }
 
@@ -24963,6 +24985,12 @@ tf
 24 
 	#SYS_g‘µid
  23
+
+	)
+
+25 
+	#SYS_y›ld
+ 24
 
 	)
 
@@ -28790,63 +28818,67 @@ fd
 	`g‘µid
 ();
 
-30 
+28 
+	`y›ld
+();
+
+31 
 	`¡©
 (cÚ¡ *, 
 ¡©
 *);
 
-31 * 
+32 * 
 	`¡rýy
 (*, const *);
 
-32 *
+33 *
 	`memmove
 (*, const *, );
 
-33 * 
+34 * 
 	`¡rchr
 (cÚ¡ *, 
 c
 );
 
-34 
+35 
 	`¡rcmp
 (const *, const *);
 
-35 
+36 
 	`´štf
 (, const *, ...);
 
-36 * 
+37 * 
 	`g‘s
 (*, 
 max
 );
 
-37 
+38 
 ušt
  
 	`¡¾’
 (const *);
 
-38 * 
+39 * 
 	`mem£t
 (*, , 
 ušt
 );
 
-39 * 
+40 * 
 	`m®loc
 (
 ušt
 );
 
-40 
+41 
 	`ä“
 (*);
 
-41 
+42 
 	`©oi
 (const *);
 
@@ -35033,9 +35065,15 @@ myfunùiÚ
 )
 
 33 
-	`SYSCALL
+	$SYSCALL
 (
 g‘µid
+)
+
+34 
+	`SYSCALL
+(
+y›ld
 )
 
 	@vectors.S

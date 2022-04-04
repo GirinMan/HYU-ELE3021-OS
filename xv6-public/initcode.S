@@ -17,7 +17,7 @@ start:
 # for(;;) exit();
 exit:
   movl $SYS_exit, %eax
-  int $T_yield
+  int $T_SYSCALL
   jmp exit
 
 # char init[] = "/init\0";

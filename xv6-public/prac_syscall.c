@@ -18,7 +18,7 @@ int sys_myfunction(void){
 
 
 // System call version of yield
-int sys_yield(void){
+int sys_syield(void){
 	yield();
 	return 0;
 }

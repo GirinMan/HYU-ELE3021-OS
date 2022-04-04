@@ -322,6 +322,7 @@ wait(void)
 void
 scheduler(void)
 {
+  int verbose = 1;
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
@@ -343,6 +344,9 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
+      if(verbose && ticks > 10){
+        cprintf("ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
+      }
       swtch(&(c->scheduler), p->context);
       switchkvm();
 

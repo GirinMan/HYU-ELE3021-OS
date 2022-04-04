@@ -1,13 +1,17 @@
+#include "types.h"
 #include "stat.h"
-#include "defs.h"
 #include "user.h"
 
 int main(int argc, char** argv){
 
-
-    while(1){
-        continue;
+    int n = 0;
+    for(int i = 0; i < 10000; i++){
+        getpid();
+        n++;
+        getppid();
     }
+
+    printf(1, "%d times loop ended.\n", n);
 
     exit();
 

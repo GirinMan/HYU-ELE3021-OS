@@ -17,14 +17,14 @@ int main(int argc, char** argv){
     else if (pid == 0) {// child process
         while(1){
             printf(1, "Child\n");
-            yield();
+            syield();
         }
     }
 
     else { // parent process
         while(1){
             printf(1, "Parent\n");
-            yield();
+            syield();
         }
     }
 
