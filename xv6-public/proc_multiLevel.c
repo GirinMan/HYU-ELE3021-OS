@@ -344,7 +344,7 @@ scheduler(void)
       p->state = RUNNING;
 
       if(VERBOSE && ticks > 10){
-        cprintf("[RR] ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
+        cprintf("[MultiLevel] ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
       }
       swtch(&(c->scheduler), p->context);
       switchkvm();

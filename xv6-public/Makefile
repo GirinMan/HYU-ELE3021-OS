@@ -1,3 +1,18 @@
+ifndef PROC
+PROC = proc.o
+endif
+
+ifndef MLFQ_K
+MLFQ_K = 3
+endif
+
+ifeq ($(SCHED_POLICY), MULTILEVEL_SCHED)
+	PROC = proc_multiLevel.o
+endif
+ifeq ($(SCHED_POLICY), MLFQ_SCHED)
+	PROC = proc_MLFQ.o
+endif
+
 OBJS = \
 	bio.o\
 	console.o\
@@ -14,7 +29,7 @@ OBJS = \
 	mp.o\
 	picirq.o\
 	pipe.o\
-	proc.o\
+	$(PROC)\
 	sleeplock.o\
 	spinlock.o\
 	string.o\

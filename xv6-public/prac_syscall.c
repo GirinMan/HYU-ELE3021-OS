@@ -16,9 +16,3 @@ int sys_myfunction(void){
 	return myfunction(str);
 }
 
-
-// System call version of yield
-int sys_syield(void){
-	yield();
-	return 0;
-}

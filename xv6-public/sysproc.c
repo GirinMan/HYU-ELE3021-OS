@@ -95,3 +95,12 @@ sys_getppid(void)
 {
   return myproc()->parent->pid;
 }
+
+
+// System call version of yield
+int
+sys_yield(void)
+{
+	yield();
+	return 0;
+}

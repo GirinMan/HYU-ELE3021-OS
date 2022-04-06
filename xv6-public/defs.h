@@ -191,4 +191,5 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // prac_syscall.c
 int		myfunction(char*);
+int     sys_yield(void);
 

@@ -56,3 +56,6 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+// check whether debug statements to be printed or not
+#define VERBOSE 1
