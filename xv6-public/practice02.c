@@ -2,6 +2,8 @@
 #include "stat.h"
 #include "user.h"
 
+#define LOOP 4
+
 int main(int argc, char** argv){
 
     int pid;
@@ -14,20 +16,30 @@ int main(int argc, char** argv){
         exit();
     }
 
-    else if (pid == 0) {// child process
-        while(1){
+    if (pid == 0) {// child process
+        //procdump();
+        int loop = LOOP;
+        while(loop-- > 0){
             printf(1, "Child\n");
+            //procdump();
             yield();
         }
     }
 
-    else { // parent process
-        while(1){
+    if(pid > 0){ // parent process
+        //sleep(10);
+        //procdump();
+        int loop = LOOP;
+        while(loop-- > 0){
             printf(1, "Parent\n");
+            //procdump();
             yield();
         }
+        //procdump();
+        wait();
+        //procdump();
     }
-
+    //procdump();
     exit();
 
     return 0;

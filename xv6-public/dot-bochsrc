@@ -369,7 +369,7 @@ log: bochsout.txt
 # LOG CONTROLS
 #
 # Bochs now has four severity levels for event logging.
-#   panic: cannot proceed.  If you choose to continue after a panic, 
+#    cannot proceed.  If you choose to continue after a panic, 
 #          don't be surprised if you get strange behavior or crashes.
 #   error: something went wrong, but it is probably safe to continue the
 #          simulation.

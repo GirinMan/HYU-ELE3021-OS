@@ -7,9 +7,77 @@
 #include "proc.h"
 #include "spinlock.h"
 
+struct queue{
+  struct proc* arr[NPROC];
+  int head;
+  int tail;
+  int num;
+};
+
+void printQueue(struct queue q){
+    cprintf("Queue: num=%d head=%d tail=%d arr=[ ", q.num, q.head, q.tail);
+    for(int i = q.head; i != q.tail; i++){
+        if(i == NPROC){
+            if(q.tail == 0) break;
+            i = 0;
+        }
+        cprintf("pid[%d] name[%s], ", q.arr[i]->pid, q.arr[i]->name);
+    }
+    if(q.num > 0)cprintf("pid[%d] name[%s]", q.arr[q.tail]->pid, q.arr[q.tail]->name);
+    cprintf(" ]\n");
+}
+
+void initQueue(struct queue* q){
+  q->head = q->tail = q->num = 0;
+}
+
+struct proc* dequeue(struct queue* q){
+  struct proc* elem;
+  if(q->num < 1) return 0;
+  else if (q->num == 1){
+    elem = q->arr[q->head];
+    initQueue(q);
+  }
+  else{
+    q->num--;
+    elem = q->arr[q->head];
+    if(q->head == NPROC-1){
+      q->head = 0;
+    }
+    else{
+      q->head++;
+    }
+  }
+
+  return elem;
+}
+
+void enqueue(struct queue* q, struct proc* elem){
+  if(q->num == 0){
+    initQueue(q);
+  }
+  else if(q->num == NPROC){
+    return;
+  }
+  else{
+    if(q->tail == NPROC - 1){
+      q->tail = 0;
+    }
+    else{
+      q->tail++;
+    }
+  }
+  q->arr[q->tail] = elem;
+  q->num++;
+  //printQueue(*q);
+}
+
+
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
+  struct queue odd;
 } ptable;
 
 static struct proc *initproc;
@@ -24,6 +92,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  initQueue(&ptable.odd);
 }
 
 // Must be called with interrupts disabled
@@ -88,6 +157,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  
 
   release(&ptable.lock);
 
@@ -112,7 +182,7 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-  return p;
+  return p; 
 }
 
 //PAGEBREAK: 32
@@ -149,6 +219,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
 
   release(&ptable.lock);
 }
@@ -214,7 +285,9 @@ fork(void)
 
   acquire(&ptable.lock);
 
+  if(VERBOSE) cprintf("fork %d acquire ptable\n", pid);
   np->state = RUNNABLE;
+  //if((np->pid % 2) != 0) enqueue(&ptable.odd, np);
 
   release(&ptable.lock);
 
@@ -325,16 +398,22 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
+  int cpid = 0;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
+    // Round-Robin scheduling for processes with even pid
     acquire(&ptable.lock);
+    even:
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+      
+      if((p->pid % 2) != 0 || p->state != RUNNABLE){
         continue;
+      }
+
+      //procdump();
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -343,7 +422,8 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
-      if(VERBOSE && ticks > 10){
+      if(VERBOSE && cpid != p->pid){
+        cpid = p->pid;
         cprintf("[MultiLevel] ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
       }
       swtch(&(c->scheduler), p->context);
@@ -351,8 +431,71 @@ scheduler(void)
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      c->proc = 0;
+      c->proc = 0; 
     }
+
+    // Round-Robin scheduling for even pid processes ended.
+
+    // First-Come-First-Serve scheduling for processes with odd pid
+    for(;;){
+      int tmp = 0;
+      struct proc* p = 0;
+
+      for(struct proc* p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+        if(p1->state != RUNNABLE){
+          continue;
+        }
+        else if((p1->pid % 2) != 0){
+          if(tmp == 0 || tmp > p1->pid){
+            tmp = p1->pid;
+            p = p1;
+          }
+          continue;
+        }
+        else{
+          // Processes with even pid is not finished scheduling yet. Goto even.
+          goto even;
+        }
+      }
+
+      if(p == 0){
+        break;
+      }
+
+      //p = dequeue(&ptable.odd);
+
+      if(p->state != RUNNABLE){
+        cprintf("Process %d is not RUNNABLE.\n", p->pid);
+        panic("odd pid scheduling\n");
+        continue;
+      }
+
+      //procdump();
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+
+      p->state = RUNNING;
+
+      if(VERBOSE && cpid != p->pid){
+        cpid = p->pid;
+        cprintf("[MultiLevel] ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
+      }
+
+      //cprintf("Context switch to process pid %d\n", p->pid);
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+
+    }
+
+    //cprintf("FCFS scheduling for odd pid processes ended.\n");
     release(&ptable.lock);
 
   }
@@ -388,8 +531,11 @@ sched(void)
 void
 yield(void)
 {
+  struct proc* p = myproc();
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
+  p->state = RUNNABLE;
+  //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
+  // procdump();
   sched();
   release(&ptable.lock);
 }
@@ -463,8 +609,10 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -489,8 +637,10 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -534,4 +684,6 @@ procdump(void)
     }
     cprintf("\n");
   }
+
+  // printQueue(ptable.odd);
 }

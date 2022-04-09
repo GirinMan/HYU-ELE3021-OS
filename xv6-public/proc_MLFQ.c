@@ -533,5 +533,8 @@ procdump(void)
         cprintf(" %p", pc[i]);
     }
     cprintf("\n");
+#ifdef MLFQ_K
+    cprintf("Current MLFQ K: %d\n", MLFQ_K);
+#endif
   }
 }

@@ -104,3 +104,10 @@ sys_yield(void)
 	yield();
 	return 0;
 }
+
+// System call version of procdump
+int
+sys_procdump(void){
+  procdump();
+  return 0;
+}
