@@ -27,6 +27,8 @@ int myfunction(char*);
 int getppid(void);
 void yield(void);
 void procdump(void);
+int getlev(void);
+int setpriority(int pid, int priority);
 
 // ulib.c
 int stat(const char*, struct stat*);

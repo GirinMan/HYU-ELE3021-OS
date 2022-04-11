@@ -147,6 +147,8 @@ main(void)
   static char buf[100];
   int fd;
 
+  // printf(1, "sh with pid %d activated.\n", getpid());
+
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
     if(fd >= 3){

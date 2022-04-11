@@ -33,4 +33,6 @@ SYSCALL(myfunction)
 SYSCALL(getppid)
 SYSCALL(yield)
 SYSCALL(procdump)
+SYSCALL(getlev)
+SYSCALL(setpriority)
 

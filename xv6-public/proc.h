@@ -49,7 +49,16 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+#ifdef MLFQ_K
+  int priority;                // Priority of each process
+  int level;                   // MLFQ queue level
+  int extime;                  // Time passed during execution
+#endif
 };
+
+#ifdef MLFQ_K
+#define QT(LEVEL) 4*LEVEL+2
+#endif  
 
 // Process memory is laid out contiguously, low addresses first:
 //   text

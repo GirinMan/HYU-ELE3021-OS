@@ -1,9 +1,9 @@
 
 ifndef SCHED_POLICY
-SCHED_POLICY := ROUND_ROBIN
+SCHED_POLICY := RR_SCHED
 endif
 
-ifeq ($(SCHED_POLICY), ROUND_ROBIN)
+ifeq ($(SCHED_POLICY), RR_SCHED)
 	PROC := proc.o
 endif
 
@@ -221,6 +221,7 @@ UPROGS=\
 	_practice02\
 	_practice03\
 	_ml_test\
+	_mlfq_test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -293,7 +294,7 @@ EXTRA=\
 	printf.c umalloc.c my_userapp.c\
 	project01.c\
 	practice01.c practice02.c practice03.c\
-	ml_test.c\
+	ml_test.c mlfq_test.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

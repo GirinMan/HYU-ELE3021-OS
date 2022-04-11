@@ -92,7 +92,6 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
-  initQueue(&ptable.odd);
 }
 
 // Must be called with interrupts disabled

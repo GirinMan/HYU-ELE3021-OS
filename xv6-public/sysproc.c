@@ -61,7 +61,9 @@ sys_sleep(void)
 {
   int n;
   uint ticks0;
-
+#ifdef MLFQ_K
+  rst();
+#endif
   if(argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
@@ -101,6 +103,9 @@ sys_getppid(void)
 int
 sys_yield(void)
 {
+#ifdef MLFQ_K
+  rst();
+#endif
 	yield();
 	return 0;
 }
@@ -110,4 +115,30 @@ int
 sys_procdump(void){
   procdump();
   return 0;
+}
+
+// System call getlev
+int
+sys_getlev(void){
+#ifdef MLFQ_K
+  return getlev();
+#else
+  return -1;
+#endif
+}
+
+// System call setpriority
+int
+sys_setpriority(void){
+#ifdef MLFQ_K
+  int a, b;
+  if(argint(0, &a) < 0)
+    return -1;
+  if(argint(1, &b) < 0)
+    return -2;
+
+  return setpriority(a, b);
+#else
+  return -1;
+#endif
 }

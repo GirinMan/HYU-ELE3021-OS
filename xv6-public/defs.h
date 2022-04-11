@@ -121,6 +121,14 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 
+#ifdef MLFQ_K
+void            degrade(void);
+void            boost(void);
+void            rst(void);
+int             getlev(void);
+int             setpriority(int pid, int priority);
+#endif
+
 // swtch.S
 void            swtch(struct context**, struct context*);
 
