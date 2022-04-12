@@ -57,7 +57,7 @@ struct proc {
 };
 
 #ifdef MLFQ_K
-#define QT(LEVEL) 4*LEVEL+2
+#define QT(LEVEL) (4*LEVEL)+2
 #endif  
 
 // Process memory is laid out contiguously, low addresses first:

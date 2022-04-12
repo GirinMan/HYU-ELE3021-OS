@@ -89,7 +89,6 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   
-
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -215,7 +214,6 @@ fork(void)
 
   acquire(&ptable.lock);
 
-  if(VERBOSE) cprintf("fork %d acquire ptable\n", pid);
   np->state = RUNNABLE;
 
   release(&ptable.lock);
