@@ -7,77 +7,9 @@
 #include "proc.h"
 #include "spinlock.h"
 
-struct queue{
-  struct proc* arr[NPROC];
-  int head;
-  int tail;
-  int num;
-};
-
-void printQueue(struct queue q){
-    cprintf("Queue: num=%d head=%d tail=%d arr=[ ", q.num, q.head, q.tail);
-    for(int i = q.head; i != q.tail; i++){
-        if(i == NPROC){
-            if(q.tail == 0) break;
-            i = 0;
-        }
-        cprintf("pid[%d] name[%s], ", q.arr[i]->pid, q.arr[i]->name);
-    }
-    if(q.num > 0)cprintf("pid[%d] name[%s]", q.arr[q.tail]->pid, q.arr[q.tail]->name);
-    cprintf(" ]\n");
-}
-
-void initQueue(struct queue* q){
-  q->head = q->tail = q->num = 0;
-}
-
-struct proc* dequeue(struct queue* q){
-  struct proc* elem;
-  if(q->num < 1) return 0;
-  else if (q->num == 1){
-    elem = q->arr[q->head];
-    initQueue(q);
-  }
-  else{
-    q->num--;
-    elem = q->arr[q->head];
-    if(q->head == NPROC-1){
-      q->head = 0;
-    }
-    else{
-      q->head++;
-    }
-  }
-
-  return elem;
-}
-
-void enqueue(struct queue* q, struct proc* elem){
-  if(q->num == 0){
-    initQueue(q);
-  }
-  else if(q->num == NPROC){
-    return;
-  }
-  else{
-    if(q->tail == NPROC - 1){
-      q->tail = 0;
-    }
-    else{
-      q->tail++;
-    }
-  }
-  q->arr[q->tail] = elem;
-  q->num++;
-  //printQueue(*q);
-}
-
-
-
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
-  struct queue odd;
 } ptable;
 
 static struct proc *initproc;
@@ -218,7 +150,6 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
-  //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
 
   release(&ptable.lock);
 }
@@ -286,7 +217,6 @@ fork(void)
 
   if(VERBOSE) cprintf("fork %d acquire ptable\n", pid);
   np->state = RUNNABLE;
-  //if((np->pid % 2) != 0) enqueue(&ptable.odd, np);
 
   release(&ptable.lock);
 
@@ -461,8 +391,6 @@ scheduler(void)
         break;
       }
 
-      //p = dequeue(&ptable.odd);
-
       if(p->state != RUNNABLE){
         cprintf("Process %d is not RUNNABLE.\n", p->pid);
         panic("odd pid scheduling\n");
@@ -533,7 +461,6 @@ yield(void)
   struct proc* p = myproc();
   acquire(&ptable.lock);  //DOC: yieldlock
   p->state = RUNNABLE;
-  //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
   // procdump();
   sched();
   release(&ptable.lock);
@@ -610,7 +537,6 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
     }
 }
 
@@ -638,7 +564,6 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
-        //if((p->pid % 2) != 0) enqueue(&ptable.odd, p);
       }
       release(&ptable.lock);
       return 0;
@@ -684,5 +609,4 @@ procdump(void)
     cprintf("\n");
   }
 
-  // printQueue(ptable.odd);
 }
