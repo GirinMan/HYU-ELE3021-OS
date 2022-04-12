@@ -55,7 +55,6 @@ struct proc {
   int extime;                  // Time passed during execution
 #endif
 };
-
 #ifdef MLFQ_K
 #define QT(LEVEL) (4*LEVEL)+2
 #endif  

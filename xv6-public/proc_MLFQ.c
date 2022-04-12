@@ -339,6 +339,7 @@ degrade(void)
   if(ptable.heads[p->level] != p){
     panic("degrade");
   }
+  if(VERBOSE) cprintf("[%dtick] ", ticks);
   if(VERBOSE) cprintf("Adding 1 to exec time of process %d.", p->pid);
   if(p->extime >= QT(p->level)){
     if(VERBOSE) cprintf(" Exec time expired.");
@@ -370,7 +371,7 @@ void boost(void)
   acquire(&ptable.lock);
   if(VERBOSE) cprintf("============PRIORITY BOOST ACTIVATED============\n");
   for(struct proc* p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    //if(p->level != 0){
+    if(p->state != UNUSED){
       if(VERBOSE) cprintf("pid=%d boosted from L%d to L0.\n", p->pid, p->level);
       if(p->state == RUNNABLE){
         ptable.numproc[p->level]--;
@@ -378,12 +379,13 @@ void boost(void)
       }
       p->level = 0;
       p->extime = 0;
-    //}
+    }
   }
   if(VERBOSE) cprintf("All boosted process's exec time initialized.\n============PRIORITY BOOST ENDED============\n");
   release(&ptable.lock);
 }
 
+int currst = 0;
 // Called when yield & sleep system call is called.
 // Assume that the process which called syscall has ended executing
 // so that the kernel can initialize the level and execution time of the process.
@@ -397,6 +399,9 @@ void rst(void)
   }
   p->level = 0;
   p->extime = 0;
+  if(currst != p->pid){
+    currst = p->pid;
+  }
   release(&ptable.lock);
 }
 
