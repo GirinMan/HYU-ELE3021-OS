@@ -370,7 +370,7 @@ void boost(void)
   acquire(&ptable.lock);
   if(VERBOSE) cprintf("============PRIORITY BOOST ACTIVATED============\n");
   for(struct proc* p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->level != 0){
+    //if(p->level != 0){
       if(VERBOSE) cprintf("pid=%d boosted from L%d to L0.\n", p->pid, p->level);
       if(p->state == RUNNABLE){
         ptable.numproc[p->level]--;
@@ -378,7 +378,7 @@ void boost(void)
       }
       p->level = 0;
       p->extime = 0;
-    }
+    //}
   }
   if(VERBOSE) cprintf("All boosted process's exec time initialized.\n============PRIORITY BOOST ENDED============\n");
   release(&ptable.lock);
