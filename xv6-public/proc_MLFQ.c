@@ -385,7 +385,6 @@ void boost(void)
   release(&ptable.lock);
 }
 
-int currst = 0;
 // Called when yield & sleep system call is called.
 // Assume that the process which called syscall has ended executing
 // so that the kernel can initialize the level and execution time of the process.
@@ -399,9 +398,6 @@ void rst(void)
   }
   p->level = 0;
   p->extime = 0;
-  if(currst != p->pid){
-    currst = p->pid;
-  }
   release(&ptable.lock);
 }
 
