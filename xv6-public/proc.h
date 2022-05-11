@@ -49,12 +49,20 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  thread_t tid;                // Thread ID (0 if main thread)
+  struct proc* main;           // Main thread of current process (0 if main thread)
+  void* retval;                // Temporary save return value
+  uint sbase;                  // Base address for the stack of a new thread
+
 #ifdef MLFQ_K
   int priority;                // Priority of each process
   int level;                   // MLFQ queue level
   int extime;                  // Time passed during execution
 #endif
 };
+
+
 #ifdef MLFQ_K
 #define QT(LEVEL) (4*LEVEL)+2
 #endif  

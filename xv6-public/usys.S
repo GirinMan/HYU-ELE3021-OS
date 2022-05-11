@@ -35,4 +35,8 @@ SYSCALL(yield)
 SYSCALL(procdump)
 SYSCALL(getlev)
 SYSCALL(setpriority)
+SYSCALL(thread_create)
+SYSCALL(thread_exit)
+SYSCALL(thread_join)
+
 

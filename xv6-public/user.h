@@ -29,6 +29,9 @@ void yield(void);
 void procdump(void);
 int getlev(void);
 int setpriority(int pid, int priority);
+int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg);
+void thread_exit(void *retval);
+int thread_join(thread_t thread, void **retval);
 
 // ulib.c
 int stat(const char*, struct stat*);

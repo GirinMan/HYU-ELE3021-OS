@@ -1,0 +1,6 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/mnt/c/Users/USER/Repos/OS'
+make: Leaving directory '/mnt/c/Users/USER/Repos/OS'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+

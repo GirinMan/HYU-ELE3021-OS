@@ -120,6 +120,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg);
+void            thread_exit(void*);
+int             thread_join(thread_t, void **);
+
 
 #ifdef MLFQ_K
 void            degrade(void);

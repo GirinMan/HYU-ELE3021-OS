@@ -2,28 +2,40 @@
 #include "stat.h"
 #include "user.h"
 
+#define NUM_THREAD 5
+
+int status;
+thread_t thread[NUM_THREAD];
+int expected[NUM_THREAD];
+
+void *thread_basic(void *arg)
+{
+  int val = (int)arg;
+  printf(1, "Thread %d start\n", val);
+  if (val == 1) {
+  	sleep(100);
+    status = 1;
+  }
+  printf(1, "Thread %d end\n", val);
+  thread_exit(arg);
+
+  return 0; // This code won't be executed.
+}
+
 int main(int argc, char* argv[]){
-	char* buf = "Hello xv6!";
-	int ret_val;
-	ret_val = myfunction(buf);
-	printf(1, "Return value: 0x%x\n", ret_val);
 
-	int pid = fork();
+	int result;
+	void* retval = (void*)1;
 
-	if(pid < 0) exit();
-	if(pid == 0){
-		printf(1, "Child pid: %d\n", getpid());
-		printf(1, "Current level: %d\n", getlev());
-		printf(1, "setpriority(%d, %d)=%d\n", getpid(), 1, setpriority(getpid(), 2));
-		
+	if((result = thread_create(&thread[0], thread_basic, retval)) != 0){
+		printf(1, "Error creating thread. errcode: %d\n", result);
 	}
-	else{
-		printf(1, "Parent pid: %d\n", getpid());
-		printf(1, "Current level: %d\n", getlev());
-		printf(1, "setpriority(%d, %d)=%d\n", pid, 1, setpriority(pid, 1));
-		wait();
+	sleep(100);
+	printf(1, "Status: %d with Addr: %p\n", status, &status);
+	while((uint)result < (uint)-1){
+		result++;
+		printf(1, "");
 	}
-
 
 	exit();
 };
