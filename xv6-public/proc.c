@@ -268,8 +268,8 @@ thread_create(thread_t* thread, void *(*start_routine)(void *), void *arg)
   *thread = np->tid;
 
   np->main = main;
+  np->parent = main;
   np->pid = main->pid;
-  np->parent = main->parent;
 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the stack for new thread.
@@ -318,47 +318,92 @@ thread_create(thread_t* thread, void *(*start_routine)(void *), void *arg)
   return 0;
 }
 
+// Clear given thread.
+// Free kstack and change state into UNUSED
+// Needed ptable lock before calling
+void thread_clear(struct proc* p){
+  // Do not free pgdir because it is shared with other threads.
+  // freevm(p->pgdir);
+  kfree(p->kstack);
+  p->kstack = 0;
+  p->pid = 0;
+  p->tid = 0;
+  p->main = 0;
+  p->parent = 0;
+  p->name[0] = 0;
+  p->killed = 0;
+  p->state = UNUSED;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
 void
 exit(void)
 {
-  struct proc *current = myproc();
-  struct proc *curproc;
-  int pid = current->pid;
+  struct proc *curproc = myproc();
+  struct proc *p;
+  int fd, havethreads;
 
-  if(current == initproc)
+  if(curproc == initproc)
     panic("init exiting");
 
-  for(curproc = ptable.proc; curproc< &ptable.proc[NPROC]; curproc++){
-    if(curproc->pid != pid)
-      continue;
-
-    struct proc *p;
-    int fd;
-
-    // Close all open files.
-    for(fd = 0; fd < NOFILE; fd++){
-      if(curproc->ofile[fd]){
-        fileclose(curproc->ofile[fd]);
-        curproc->ofile[fd] = 0;
-      }
-    }
-
-    begin_op();
-    iput(curproc->cwd);
-    end_op();
-    curproc->cwd = 0;
-
+  // If current process is the main thread,
+  // Wait for sub threads to be exited before exiting main thread.
+  // Used similar structure with wait()
+  if(curproc->tid == 0){
     acquire(&ptable.lock);
-    
+    for(;;){
+      // Scan through table looking for sub threads to be exited.
+      havethreads = 0;
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->main != curproc)
+          continue;
+        if(p->state == ZOMBIE){
+          // Found one.
+          thread_clear(p);
+        }
+        else{
+          havethreads++;
+          p->killed = 1;
+          wakeup1(p);
+        }
+      }
+
+      // No point waiting if we don't have any threads to exit.
+      if(havethreads == 0){
+        release(&ptable.lock);
+        break;
+      }
+
+      // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+      sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+    }
   }
 
+  // Close all open files.
+  for(fd = 0; fd < NOFILE; fd++){
+    if(curproc->ofile[fd]){
+      fileclose(curproc->ofile[fd]);
+      curproc->ofile[fd] = 0;
+    }
+  }
 
+  begin_op();
+  iput(curproc->cwd);
+  end_op();
+  curproc->cwd = 0;
 
-  // Parent might be sleeping in wait().
-  wakeup1(curproc->parent);
+  acquire(&ptable.lock);
+
+  if(curproc->main == 0){
+    // Parent might be sleeping in wait().
+    wakeup1(curproc->parent);
+  }
+  else{
+    curproc->main->killed = 1;
+    wakeup1(curproc->main);
+  }
 
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -482,15 +527,7 @@ thread_join(thread_t thread, void** retval)
         // Put return value that saved in thread_exit to retval
         *retval = p->retval;
 
-        // Do not free pgdir because it is shared with other threads.
-        // freevm(p->pgdir); 
-        kfree(p->kstack);
-        p->kstack = 0;
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-        p->state = UNUSED;
+        thread_clear(p);
 
         release(&ptable.lock);
         return 0;

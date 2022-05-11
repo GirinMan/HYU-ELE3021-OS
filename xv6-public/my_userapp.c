@@ -17,7 +17,7 @@ void *thread_basic(void *arg)
 		status = 1;
 	}
 	int *ptr = (int *)malloc(65536);
-	procdump();
+	//procdump();
 	ptr[15000] = 777;
 
 	printf(1, "Thread %d end\n", val);
