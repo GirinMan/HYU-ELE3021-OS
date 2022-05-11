@@ -68,13 +68,9 @@ void *thread_sbrk(void *arg)
   int i, j;
 
   if (val == 0) {
-    printf(1, "Thread %d before malloc\n", val);
     ptr = (int *)malloc(65536);
-    printf(1, "Thread %d after malloc\n", val);
     sleep(100);
-    printf(1, "Thread %d before free\n", val);
     free(ptr);
-    printf(1, "Thread %d after free\n", val);
     ptr = 0;
   }
   else {

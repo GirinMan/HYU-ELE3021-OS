@@ -50,10 +50,14 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
+    
+  if(myproc()->tid == 0)
+    addr = myproc()->sz;
+  else
+    addr = myproc()->main->sz;
+  
   if(growproc(n) < 0)
     return -1;
-  
   return addr;
 }
 

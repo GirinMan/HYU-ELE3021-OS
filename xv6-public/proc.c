@@ -164,38 +164,27 @@ growproc(int n)
 {
   uint sz;
   struct proc *curproc = myproc();
-  struct proc *main, *p;
+  struct proc *main;
 
   if(curproc->tid == 0)
     main = curproc;
   else
     main = curproc->main;
-  cprintf("main: pid=%d tid=%d sz=%d\n", main->pid, main->tid, main->sz);
-  cprintf("curproc: pid=%d tid=%d sz=%d\n", curproc->pid, curproc->tid, curproc->sz);
+
   sz = main->sz;
   if(n > 0){
     if((sz = allocuvm(main->pgdir, sz, sz + n)) == 0)
       return -1;
-    cprintf("allocuvm success. oldsz=%d -> newsz=%d\n", main->sz, sz);
   } else if(n < 0){
     if((sz = deallocuvm(main->pgdir, sz, sz + n)) == 0)
       return -1;
   }
   main->sz = sz;
 
-  // Update new size information to sub threads
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->main != main)
-      continue;
-    
-    p->sz = sz;      
-  }
-  cprintf("size update finished.\n");
-
   switchuvm(curproc);
   return 0;
 }
- 
+
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
@@ -306,7 +295,7 @@ thread_create(thread_t* thread, void *(*start_routine)(void *), void *arg)
   }
 
   np->pgdir = pgdir;
-  np->sz = sz;
+  np->sz = main->sz;
   np->sbase = sbase;
 
   *np->tf = *main->tf;
@@ -335,27 +324,38 @@ thread_create(thread_t* thread, void *(*start_routine)(void *), void *arg)
 void
 exit(void)
 {
-  struct proc *curproc = myproc();
-  struct proc *p;
-  int fd;
+  struct proc *current = myproc();
+  struct proc *curproc;
+  int pid = current->pid;
 
-  if(curproc == initproc)
+  if(current == initproc)
     panic("init exiting");
 
-  // Close all open files.
-  for(fd = 0; fd < NOFILE; fd++){
-    if(curproc->ofile[fd]){
-      fileclose(curproc->ofile[fd]);
-      curproc->ofile[fd] = 0;
+  for(curproc = ptable.proc; curproc< &ptable.proc[NPROC]; curproc++){
+    if(curproc->pid != pid)
+      continue;
+
+    struct proc *p;
+    int fd;
+
+    // Close all open files.
+    for(fd = 0; fd < NOFILE; fd++){
+      if(curproc->ofile[fd]){
+        fileclose(curproc->ofile[fd]);
+        curproc->ofile[fd] = 0;
+      }
     }
+
+    begin_op();
+    iput(curproc->cwd);
+    end_op();
+    curproc->cwd = 0;
+
+    acquire(&ptable.lock);
+    
   }
 
-  begin_op();
-  iput(curproc->cwd);
-  end_op();
-  curproc->cwd = 0;
 
-  acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
@@ -381,7 +381,6 @@ exit(void)
 void
 thread_exit(void *retval)
 {
-  cprintf("thread_exit with arg: %d\n", (int)retval);
   struct proc *curproc = myproc();
   int fd;
 
@@ -483,10 +482,10 @@ thread_join(thread_t thread, void** retval)
         // Put return value that saved in thread_exit to retval
         *retval = p->retval;
 
-        kfree(p->kstack);
-        p->kstack = 0;
         // Do not free pgdir because it is shared with other threads.
         // freevm(p->pgdir); 
+        kfree(p->kstack);
+        p->kstack = 0;
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -724,7 +723,7 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("%d %d %d %s %s", p->pid, p->tid, p->sz, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)

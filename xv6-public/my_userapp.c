@@ -10,16 +10,20 @@ int expected[NUM_THREAD];
 
 void *thread_basic(void *arg)
 {
-  int val = (int)arg;
-  printf(1, "Thread %d start\n", val);
-  if (val == 1) {
-  	sleep(100);
-    status = 1;
-  }
-  printf(1, "Thread %d end\n", val);
-  thread_exit(arg);
+	int val = (int)arg;
+	printf(1, "Thread %d start\n", val);
+	if (val == 1) {
+		sleep(100);
+		status = 1;
+	}
+	int *ptr = (int *)malloc(65536);
+	procdump();
+	ptr[15000] = 777;
 
-  return 0; // This code won't be executed.
+	printf(1, "Thread %d end\n", val);
+	thread_exit((void*)(ptr[15000]));
+
+	return 0; // This code won't be executed.
 }
 
 int main(int argc, char* argv[]){
@@ -32,11 +36,10 @@ int main(int argc, char* argv[]){
 	}
 	sleep(100);
 	printf(1, "Status: %d with Addr: %p\n", status, &status);
-	while((uint)result < (uint)-1){
-		result++;
-		printf(1, "");
-	}
+	
+	thread_join(thread[0], (void**)&result);
 
+	printf(1, "return val: %d\n", result);
 	exit();
 };
 

@@ -224,6 +224,7 @@ UPROGS=\
 	_mlfq_test\
 	_hello_thread\
 	_thread_test\
+	_thread_exit\
 	
 
 fs.img: mkfs README $(UPROGS)
@@ -298,7 +299,7 @@ EXTRA=\
 	project01.c\
 	practice01.c practice02.c practice03.c\
 	ml_test.c mlfq_test.c\
-	hello_thread.c thread_test.c\
+	hello_thread.c thread_test.c thread_exit.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
