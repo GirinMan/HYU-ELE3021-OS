@@ -124,6 +124,8 @@ int             thread_create(thread_t *thread, void *(*start_routine)(void *), 
 void            thread_exit(void*);
 int             thread_join(thread_t, void **);
 void            thread_clear(struct proc*);
+void            clear_subthreads(struct proc*);
+void            kill_threads_except(int, struct proc*);
 
 
 #ifdef MLFQ_K

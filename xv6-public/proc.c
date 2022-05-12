@@ -208,7 +208,12 @@ fork(void)
     return -1;
   }
   np->sz = curproc->sz;
-  np->parent = curproc;
+  if(np->tid != 0){
+    //cprintf("A thread has forked. Set parent of new process to main process thread.\n");
+    np->parent = curproc->main;
+  }
+  else
+    np->parent = curproc;
   *np->tf = *curproc->tf;
 
   // Clear %eax so that fork returns 0 in the child.
@@ -335,30 +340,20 @@ void thread_clear(struct proc* p){
   p->state = UNUSED;
 }
 
-// Exit the current process.  Does not return.
-// An exited process remains in the zombie state
-// until its parent calls wait() to find out it exited.
-void
-exit(void)
-{
-  struct proc *curproc = myproc();
-  struct proc *p;
-  int fd, havethreads;
-
-  if(curproc == initproc)
-    panic("init exiting");
-
-  // If current process is the main thread,
-  // Wait for sub threads to be exited before exiting main thread.
-  // Used similar structure with wait()
+// Wait for threads except current thread to be exited before
+// Used similar structure with wait()
+void clear_subthreads(struct proc* curproc){
+  struct proc* p;
+  int havethreads;
   if(curproc->tid == 0){
     acquire(&ptable.lock);
     for(;;){
       // Scan through table looking for sub threads to be exited.
       havethreads = 0;
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->main != curproc)
+        if(p->pid != curproc->pid || p == curproc){
           continue;
+        }
         if(p->state == ZOMBIE){
           // Found one.
           thread_clear(p);
@@ -380,6 +375,64 @@ exit(void)
       sleep(curproc, &ptable.lock);  //DOC: wait-sleep
     }
   }
+  else{
+    //cprintf("Not main thread.\n");
+  }
+}
+
+void kill_threads_except(int pid, struct proc* cp){
+  struct proc* p, * q;
+  int fd;
+
+  acquire(&ptable.lock);
+  
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid != pid || p == cp){
+      continue;
+    }
+    
+    for(q = ptable.proc; q < &ptable.proc[NPROC]; q++){
+      if(q->parent == p){
+        q->parent = initproc;
+        if(q->state == ZOMBIE)
+        wakeup1(initproc);
+      }
+    }
+     // Close all open files.
+    for(fd = 0; fd < NOFILE; fd++){
+      if(p->ofile[fd]){
+        fileclose(p->ofile[fd]);
+        p->ofile[fd] = 0;
+      }
+    }
+    release(&ptable.lock);
+
+    begin_op();
+    iput(p->cwd);
+    end_op();
+    p->cwd = 0;
+
+    acquire(&ptable.lock);
+
+    thread_clear(p);
+  }
+  release(&ptable.lock);
+}
+
+// Exit the current process.  Does not return.
+// An exited process remains in the zombie state
+// until its parent calls wait() to find out it exited.
+void
+exit(void)
+{
+  struct proc *curproc = myproc();
+  struct proc *p;
+  int fd;
+
+  if(curproc == initproc)
+    panic("init exiting");
+
+  clear_subthreads(curproc);
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){

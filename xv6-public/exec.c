@@ -17,7 +17,17 @@ exec(char *path, char **argv)
   struct inode *ip;
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
-  struct proc *curproc = myproc();
+  struct proc *curproc;
+
+  curproc = myproc();
+
+  if(curproc->tid != 0){
+    curproc->tid = 0;
+    curproc->parent = curproc->main->parent;
+    curproc->main = 0;
+  }
+
+  kill_threads_except(curproc->pid, curproc);
 
   begin_op();
 
@@ -93,6 +103,7 @@ exec(char *path, char **argv)
       last = s+1;
   safestrcpy(curproc->name, last, sizeof(curproc->name));
 
+
   // Commit to the user image.
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
@@ -101,6 +112,7 @@ exec(char *path, char **argv)
   curproc->tf->esp = sp;
   switchuvm(curproc);
   freevm(oldpgdir);
+  
   return 0;
 
  bad:
