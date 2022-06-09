@@ -16,16 +16,21 @@
 #include "file.h"
 #include "fcntl.h"
 
-// Fetch the nth word-sized system call argument as a file descriptor
-// and return both the descriptor and the corresponding struct file.
-static int
-argfd(int n, int *pfd, struct file **pf)
+#define MAX_USER 10
+#define MAX_LEN 15
+
+struct{
+  int fd, userIdx, userCnt;
+  struct file *f;
+  char usernames[MAX_USER][MAX_LEN + 1];
+  char passwords[MAX_USER][MAX_LEN + 1];
+} ltable;
+
+int
+getfilebyfd(int fd, int *pfd, struct file **pf)
 {
-  int fd;
   struct file *f;
 
-  if(argint(n, &fd) < 0)
-    return -1;
   if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
     return -1;
   if(pfd)
@@ -33,6 +38,19 @@ argfd(int n, int *pfd, struct file **pf)
   if(pf)
     *pf = f;
   return 0;
+}
+
+// Fetch the nth word-sized system call argument as a file descriptor
+// and return both the descriptor and the corresponding struct file.
+static int
+argfd(int n, int *pfd, struct file **pf)
+{
+  int fd;
+
+  if(argint(n, &fd) < 0)
+    return -1;
+
+  return getfilebyfd(fd, pfd, pf);
 }
 
 // Allocate a file descriptor for the given file.
@@ -282,16 +300,13 @@ create(char *path, short type, short major, short minor)
   return ip;
 }
 
+
 int
-sys_open(void)
+open(char *path, int omode)
 {
-  char *path;
-  int fd, omode;
+  int fd;
   struct file *f;
   struct inode *ip;
-
-  if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
-    return -1;
 
   begin_op();
 
@@ -330,6 +345,18 @@ sys_open(void)
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
   return fd;
+}
+
+int
+sys_open(void)
+{
+  char *path;
+  int omode;
+
+  if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
+    return -1;
+
+  return open(path, omode);
 }
 
 int
@@ -441,4 +468,236 @@ sys_pipe(void)
   fd[0] = fd0;
   fd[1] = fd1;
   return 0;
+}
+
+void loadUsers(){
+  char buf[(MAX_LEN*2 + 2)*MAX_USER + 1] = {0};
+  int idx, n;
+  
+  //cprintf("loadUsers begin\n");
+  if((ltable.fd = open("/passwd", O_RDONLY | O_CREATE)) < 0){
+    panic("loadUsers 1");
+  }
+  if(getfilebyfd(ltable.fd, 0, &ltable.f) < 0){
+    panic("loadUsers 2");
+  }
+
+  // passwd is like "root-0000/user-1234/"
+  idx = 0;
+  if((n = fileread(ltable.f, buf, sizeof(buf))) > 6) {
+      int pw = 0, offset = 0;
+
+      for(int i = 0; i < sizeof(buf); i++){
+        if(idx == MAX_USER || buf[i] == 0)
+          break;
+
+        if(!pw){
+          if(buf[i] != '-'){
+            ltable.usernames[idx][offset++] = buf[i];
+          }
+          else{
+            pw = 1;
+            offset = 0;
+          }
+        }
+        else{
+          if(buf[i] != '/'){
+            ltable.passwords[idx][offset++] = buf[i];
+          }
+          else{
+            pw = 0;
+            offset = 0;
+            idx++;
+          }
+        }
+      }
+  }
+  ltable.userCnt = idx;
+
+  if(n < 0){
+      panic("loadUsers 3");
+  }
+
+  myproc()->ofile[ltable.fd] = 0;
+  fileclose(ltable.f);
+
+  ltable.fd = 0;
+  ltable.f = 0;
+
+  //cprintf("loadUsers end\n");
+}
+
+void flushUsers(){
+  //cprintf("flushUsers begin\n");
+  char buf[MAX_LEN*2 + 2 + 1] = {0}; // UID PW - / 0
+  
+  if((ltable.fd = open("/passwd", O_WRONLY)) < 0){
+    panic("flushUsers 1");
+  }
+  if(getfilebyfd(ltable.fd, 0, &ltable.f) < 0){
+    panic("flushUsers 2");
+  }
+  ltable.f->off = 0;
+
+  // passwd is like "root-0000/user-1234/"
+  for(int i = 0; i < ltable.userCnt; i++){
+    char* p = buf;
+    int len = strlen(ltable.usernames[i]);
+
+    strncpy(p, ltable.usernames[i], len);
+    for(int j = 0; j < len; j++)
+      p++;
+    *p = '-';
+    p++;
+    
+    len = strlen(ltable.passwords[i]);
+    strncpy(p, ltable.passwords[i], len);
+    for(int j = 0; j < len; j++)
+      p++;
+    *p = '/';
+    p++;
+    *p = 0;
+
+    filewrite(ltable.f, buf, strlen(buf));
+  }
+
+  myproc()->ofile[ltable.fd] = 0;
+  fileclose(ltable.f);
+
+  ltable.fd = 0;
+  ltable.f = 0;
+  //cprintf("flushUsers end\n");
+}
+
+
+int addUser(char *username, char *password){
+  //cprintf("addUser begin\n");
+  if(ltable.userCnt == MAX_USER){
+    return -1; // Cannot add more user!
+  }
+
+  for(int i = 0; i < ltable.userCnt; i++){
+    if(strncmp(ltable.usernames[i], username, strlen(ltable.usernames[i])) == 0
+    && (strlen(ltable.usernames[i]) == strlen(username))){
+      return -1; // Username already exists!
+    }
+  }
+
+  strncpy(ltable.usernames[ltable.userCnt], username, strlen(username));
+  strncpy(ltable.passwords[ltable.userCnt], password, strlen(password));
+  ltable.userCnt++;
+
+  flushUsers();
+  //cprintf("addUser end\n");
+  return 0;
+}
+
+
+int deleteUser(char *username){
+  //cprintf("deleteUser begin\n");
+  int found = 0;
+  for(int i = 0; i < ltable.userCnt; i++){
+    if(strlen(ltable.usernames[i]) != strlen(username))
+      continue;
+    if(strncmp(ltable.usernames[i], username, strlen(ltable.usernames[i])) == 0){
+      found = i;
+      if(!found)
+        cprintf("Denined attempt to delete root user\n");
+      break;
+    }
+  }
+
+  if(!found)
+    return -1; // Username is root or not found.
+
+  for(int i = found + 1; i < ltable.userCnt; i++){
+    strncpy(ltable.usernames[i-1], ltable.usernames[i], strlen(ltable.usernames[i]));
+    strncpy(ltable.passwords[i-1], ltable.passwords[i], strlen(ltable.passwords[i]));
+  }
+  ltable.usernames[ltable.userCnt - 1][0] = ltable.passwords[ltable.userCnt - 1][0] = 0;
+  ltable.userCnt--;
+
+  flushUsers();
+  //cprintf("deleteUser end\n");
+  return 0;
+}
+
+
+int
+sys_lbegin(void)
+{
+  loadUsers();
+
+  if(ltable.userCnt == 0){ // Looks like passwd is empty.
+    addUser("root", "0000");
+  }
+
+  ltable.userIdx = -1;
+
+  return 0;
+}
+
+int sys_addUser(void){
+  char *username, *password;
+
+  if(argstr(0, &username) < 0 || argstr(1, &password) < 0){
+    return -1;
+  }
+
+  if(ltable.userIdx > 0){
+    cprintf("Only root is able to add a new user\n");
+    return -1;
+  }
+
+  return addUser(username, password);
+}
+
+
+int sys_deleteUser(void){
+  char *username;
+
+  if(argstr(0, &username) < 0){
+    return -1;
+  }
+
+  if(ltable.userIdx > 0){
+    cprintf("Only root is able to delete a user\n");
+    return -1;
+  }
+
+  return deleteUser(username);
+}
+
+int sys_login(void){
+  char *username, *password;
+  int found = -1;
+
+  if(argstr(0, &username) < 0 || argstr(1, &password) < 0){
+    return -1;
+  }
+
+  for(int i = 0; i < ltable.userCnt; i++){
+    if(strlen(ltable.usernames[i]) != strlen(username))
+      continue;
+    if(strncmp(ltable.usernames[i], username, strlen(username)) == 0){
+      found = i;
+      break;
+    }
+  }
+
+  if(found < 0){
+    cprintf("login failed: unknown username\n");
+    return -1;
+  }
+
+  if(strncmp(ltable.passwords[found], password, strlen(password)) == 0
+  && (strlen(ltable.passwords[found]) == strlen(password))){
+    cprintf("login successful\n");
+    ltable.userIdx = found;
+    return 0;
+  }
+  else{
+    cprintf("login failed: invalid password\n");
+    return -1;
+  }
 }

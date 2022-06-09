@@ -217,11 +217,10 @@ UPROGS=\
 	_zombie\
 	_my_userapp\
 	_project01\
-	_hello_thread\
-	_thread_kill\
-	_thread_exit\
-	_thread_test\
-	_thread_exec\
+	_login\
+	_useradd_test\
+	_userdelete_test\
+	
 	
 
 fs.img: mkfs README $(UPROGS)
@@ -294,7 +293,7 @@ EXTRA=\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
 	printf.c umalloc.c my_userapp.c\
 	project01.c\
-	hello_thread.c thread_kill.c thread_exit.c thread_test.c thread_exec.c\
+	login.c useradd_test userdelete_test\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

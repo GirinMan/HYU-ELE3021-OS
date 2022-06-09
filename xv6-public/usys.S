@@ -38,5 +38,9 @@ SYSCALL(setpriority)
 SYSCALL(thread_create)
 SYSCALL(thread_exit)
 SYSCALL(thread_join)
+SYSCALL(lbegin)
+SYSCALL(addUser)
+SYSCALL(deleteUser)
+SYSCALL(login)
 
 

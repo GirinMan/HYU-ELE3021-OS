@@ -20,12 +20,17 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_myfunction 22
-#define SYS_getppid 23
-#define SYS_yield  24
-#define SYS_procdump 25
-#define SYS_getlev 26
-#define SYS_setpriority 27
-#define SYS_thread_create 28
-#define SYS_thread_exit 29
-#define SYS_thread_join 30
+#define SYS_myfunction      22
+#define SYS_getppid         23
+#define SYS_yield           24
+#define SYS_procdump        25
+#define SYS_getlev          26
+#define SYS_setpriority     27
+#define SYS_thread_create   28
+#define SYS_thread_exit     29
+#define SYS_thread_join     30
+#define SYS_lbegin          31
+#define SYS_addUser         32
+#define SYS_deleteUser      33
+#define SYS_login           34
+

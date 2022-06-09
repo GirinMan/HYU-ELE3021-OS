@@ -32,6 +32,10 @@ int setpriority(int pid, int priority);
 int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg);
 void thread_exit(void *retval);
 int thread_join(thread_t thread, void **retval);
+void lbegin(void);
+int addUser(char *username, char *password);
+int deleteUser(char *username);
+int login(char *username, char *password);
 
 // ulib.c
 int stat(const char*, struct stat*);
