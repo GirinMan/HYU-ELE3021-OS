@@ -230,6 +230,8 @@ iupdate(struct inode *ip)
   dip->minor = ip->minor;
   dip->nlink = ip->nlink;
   dip->size = ip->size;
+  dip->perm = ip->perm;
+  strncpy((char*)dip->owner, (char*)ip->owner, MAX_LEN);
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
   log_write(bp);
   brelse(bp);
@@ -294,7 +296,6 @@ ilock(struct inode *ip)
     panic("ilock");
 
   acquiresleep(&ip->lock);
-
   if(ip->valid == 0){
     bp = bread(ip->dev, IBLOCK(ip->inum, sb));
     dip = (struct dinode*)bp->data + ip->inum%IPB;
@@ -303,6 +304,8 @@ ilock(struct inode *ip)
     ip->minor = dip->minor;
     ip->nlink = dip->nlink;
     ip->size = dip->size;
+    ip->perm = dip->perm;
+    strncpy(ip->owner, dip->owner, MAX_LEN);
     memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
     brelse(bp);
     ip->valid = 1;
@@ -444,6 +447,8 @@ stati(struct inode *ip, struct stat *st)
   st->type = ip->type;
   st->nlink = ip->nlink;
   st->size = ip->size;
+  st->perm = ip->perm;
+  strncpy((char*)st->owner, (char*)ip->owner, MAX_LEN + 1);
 }
 
 //PAGEBREAK!
@@ -508,6 +513,40 @@ writei(struct inode *ip, char *src, uint off, uint n)
     iupdate(ip);
   }
   return n;
+}
+
+// Clear data of inode.
+// Caller must hold ip->lock.
+int
+cleari(struct inode *ip)
+{
+  uint tot, off, m, n;
+  struct buf *bp;
+
+  if(ip->type == T_DEV){
+    return -1;
+  }
+
+  off = 0;
+  n = ip->size;
+
+  if(off > ip->size || off + n < off)
+    return -1;
+  if(off + n > MAXFILE*BSIZE)
+    return -1;
+
+  for(tot=0; tot<n; tot+=m, off+=m){
+    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+    m = min(n - tot, BSIZE - off%BSIZE);
+    memset(bp->data + off%BSIZE, 0, m);
+    log_write(bp);
+    brelse(bp);
+  }
+
+  //ip->size = 0;
+  iupdate(ip);
+  
+  return 0;
 }
 
 //PAGEBREAK!
@@ -636,6 +675,25 @@ namex(char *path, int nameiparent, char *name)
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;
+    }
+    if(ip->type != T_DEV && myproc()->pid > 2){
+      struct stat st;
+      char username[MAX_LEN + 1] = {0};
+      stati(ip, &st);
+      whoami(username);
+      
+      if(strncmp(username, st.owner, MAX_LEN) == 0){
+        if(!(st.perm & MODE_XUSR)){
+          cprintf("Denined access to namex %s\n", path);
+          return 0;
+        }
+      }
+      else{
+        if(!(st.perm & MODE_XOTH)){
+          cprintf("Denined access to namex %s\n", path);
+          return 0;
+        }
+      }
     }
     if(nameiparent && *path == '\0'){
       // Stop one level early.

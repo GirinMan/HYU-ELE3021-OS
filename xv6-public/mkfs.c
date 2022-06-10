@@ -230,6 +230,13 @@ ialloc(ushort type)
   din.type = xshort(type);
   din.nlink = xshort(1);
   din.size = xint(0);
+  if(type == T_FILE){
+    din.perm = xint(MODE_RUSR | MODE_WUSR | MODE_XUSR | MODE_ROTH | MODE_XOTH);
+  }
+  else if(type == T_DIR){
+    din.perm = xint(MODE_RUSR | MODE_WUSR | MODE_XUSR | MODE_ROTH | MODE_XOTH);
+  }
+  strcpy(din.owner, "root");
   winode(inum, &din);
   return inum;
 }

@@ -3,6 +3,36 @@
 #include "user.h"
 #include "fs.h"
 
+char perm[7] = {0};
+
+static void setperm(int p){
+  if(p & MODE_RUSR)
+    perm[0] = 'r';
+  else
+    perm[0] = '-';
+  if(p & MODE_WUSR)
+    perm[1] = 'w';
+  else
+    perm[1] = '-';
+  if(p & MODE_XUSR)
+    perm[2] = 'x';
+  else
+    perm[2] = '-';
+  if(p & MODE_ROTH)
+    perm[3] = 'r';
+  else
+    perm[3] = '-';
+  if(p & MODE_WOTH)
+    perm[4] = 'w';
+  else
+    perm[4] = '-';
+  if(p & MODE_XOTH)
+    perm[5] = 'x';
+  else
+    perm[5] = '-';
+  perm[6] = 0;
+}
+
 char*
 fmtname(char *path)
 {
@@ -31,19 +61,21 @@ ls(char *path)
   struct stat st;
 
   if((fd = open(path, 0)) < 0){
-    printf(2, "ls: cannot open %s\n", path);
+    printf(1, "ls: cannot open %s\n", path);
     return;
   }
 
   if(fstat(fd, &st) < 0){
-    printf(2, "ls: cannot stat %s\n", path);
+    printf(1, "ls: cannot stat %s\n", path);
     close(fd);
     return;
   }
 
   switch(st.type){
   case T_FILE:
-    printf(1, "%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
+    setperm(st.perm);
+    printf(1, "%s -%s  %d %d %d   \t%s\n", 
+      fmtname(path), perm, st.type, st.ino, st.size, st.owner);
     break;
 
   case T_DIR:
@@ -63,7 +95,20 @@ ls(char *path)
         printf(1, "ls: cannot stat %s\n", buf);
         continue;
       }
-      printf(1, "%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+      if(st.type == T_FILE){
+        setperm(st.perm);
+        printf(1, "%s -%s  %d %d %d   \t%s\n", 
+          fmtname(buf), perm, st.type, st.ino, st.size, st.owner);
+      }
+      else if(st.type == T_DIR){
+        setperm(st.perm);
+        printf(1, "%s d%s  %d %d %d   \t%s\n", 
+          fmtname(buf), perm, st.type, st.ino, st.size, st.owner);
+      }
+      else{
+        printf(1, "%s -------  %d %d %d\n", 
+          fmtname(buf), st.type, st.ino, st.size);
+      }
     }
     break;
   }

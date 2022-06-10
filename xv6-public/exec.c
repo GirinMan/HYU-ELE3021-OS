@@ -6,6 +6,12 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+#include "fs.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "file.h"
+#include "stat.h"
+
 
 int
 exec(char *path, char **argv)
@@ -38,6 +44,27 @@ exec(char *path, char **argv)
   }
   ilock(ip);
   pgdir = 0;
+
+
+  if(ip->type != T_DEV && curproc->pid > 2){
+    struct stat st;
+    char username[MAX_LEN + 1] = {0};
+    stati(ip, &st);
+    whoami(username);
+    
+    if(strncmp(username, st.owner, MAX_LEN) == 0){
+      if(!(st.perm & MODE_XUSR)){
+        cprintf("Denined access to exec %s\n", path);
+        goto bad;
+      }
+    }
+    else{
+      if(!(st.perm & MODE_XOTH)){
+        cprintf("Denined access to exec %s\n", path);
+        goto bad;
+      }
+    }
+  }
 
   // Check ELF header
   if(readi(ip, (char*)&elf, 0, sizeof(elf)) != sizeof(elf))

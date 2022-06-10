@@ -169,6 +169,10 @@ main(void)
     if(buf[0] == 'l' && buf[1] == 'o' && buf[2] == 'g' && buf[3] == 'o' && buf[4] == 'u' && buf[5] == 't'){
       exit();
     }
+    if(buf[0] == 'w' && buf[1] == 'h' && buf[2] == 'o' && buf[3] == 'a' && buf[4] == 'm' && buf[5] == 'i'){
+      whoami();
+      continue;
+    }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
     wait();

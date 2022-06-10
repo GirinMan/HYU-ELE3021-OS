@@ -33,4 +33,5 @@
 #define SYS_addUser         32
 #define SYS_deleteUser      33
 #define SYS_login           34
-
+#define SYS_whoami          35
+#define SYS_chmod           36

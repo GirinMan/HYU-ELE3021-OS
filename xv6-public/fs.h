@@ -21,17 +21,21 @@ struct superblock {
   uint bmapstart;    // Block number of first free map block
 };
 
-#define NDIRECT 12
+#define NDIRECT 7
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define MAXFILE (NDIRECT + NINDIRECT)
+#define MAX_LEN 15
 
 // On-disk inode structure
+// sizeof dinode => 64bytes
 struct dinode {
   short type;           // File type
   short major;          // Major device number (T_DEV only)
   short minor;          // Minor device number (T_DEV only)
   short nlink;          // Number of links to inode in file system
   uint size;            // Size of file (bytes)
+  uint perm;            // Permission of this file
+  char owner[MAX_LEN + 1]; // username of the owner of this file
   uint addrs[NDIRECT+1];   // Data block addresses
 };
 
@@ -55,3 +59,10 @@ struct dirent {
   char name[DIRSIZ];
 };
 
+
+#define MODE_RUSR 32 // owner read
+#define MODE_WUSR 16 // owner write
+#define MODE_XUSR 8 // owner execute
+#define MODE_ROTH 4 // others read
+#define MODE_WOTH 2 // others write
+#define MODE_XOTH 1 // others execute

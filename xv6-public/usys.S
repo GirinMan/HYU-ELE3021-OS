@@ -42,5 +42,7 @@ SYSCALL(lbegin)
 SYSCALL(addUser)
 SYSCALL(deleteUser)
 SYSCALL(login)
+SYSCALL(whoami)
+SYSCALL(chmod)
 
 

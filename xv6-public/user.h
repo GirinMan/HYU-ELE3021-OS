@@ -36,6 +36,8 @@ void lbegin(void);
 int addUser(char *username, char *password);
 int deleteUser(char *username);
 int login(char *username, char *password);
+void whoami(void);
+int chmod(char *pathname, int mode);
 
 // ulib.c
 int stat(const char*, struct stat*);
