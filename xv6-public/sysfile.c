@@ -526,6 +526,7 @@ sys_exec(void)
       return -1;
   }
   result = exec(path, argv);
+  return result;
   if(result != -1){
     return result;
   }
