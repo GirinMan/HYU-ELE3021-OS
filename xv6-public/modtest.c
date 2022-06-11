@@ -24,62 +24,61 @@ int main(int argc, char *argv[])
     {
         goto bad;
     }
-    close(fd);
     
     // FILE MODE
     // Read : 파일을 읽을 수 있는 권한입니다. 구체적으로, read 권한이 없다면 open 시스템 콜에
     // O_RDONLY 또는 O_RDWR 옵션이 들어간 경우 실패해야 합니다.
-        printf(1,"1\n");
     if(chmod("testfile/t1/f1", MODE_WUSR|MODE_XUSR) == -1)
     {
+        printf(1,"1\n");
         goto bad;
     }
+    if(open("testfile/t1/f1", O_RDWR) == 0)
+    {
         printf(1,"2\n");
-    if(open("testfile/t1/f1", O_RDWR) != -1)
-    {
         goto bad;
     }
-        printf(1,"3\n");
-    if(open("testfile/t1/f1", O_RDONLY) != -1)
+    if(open("testfile/t1/f1", O_RDONLY) == 0)
     {
+        printf(1,"3\n");
         goto bad;
     }
     
     // FILE MODE
     // Write : 파일을 쓸 수 있는 권한입니다. 구체적으로, write 권한이 없다면 open 시스템 콜에
     // O_WRONLY 또는 O_RDWR 옵션이 들어간 경우 실패해야 합니다.
-        printf(1,"4\n");
     if(chmod("testfile/t1/f1", MODE_RUSR|MODE_XUSR) == -1)
     {
+        printf(1,"4\n");
         goto bad;
     }
-        printf(1,"5\n");
     if(open("testfile/t1/f1", O_RDWR) == 0)
     {
+        printf(1,"5\n");
         goto bad;
     }
-        printf(1,"6\n");
     if(open("testfile/t1/f1", O_WRONLY) == 0)
     {
+        printf(1,"6\n");
         goto bad;
     }
     
     // FILE MODE
     // Execute : 파일을 exec을 통해 실행할 수 있는 권한입니다.
     // 다시 말해, execute 권한이 없는 파일을 실행하려 하면 exec이 실패해야 합니다.
-        printf(1,"7\n");
     if(chmod("ls", MODE_RUSR|MODE_WUSR|MODE_ROTH) == -1)
     {
+        printf(1,"7\n");
         goto bad;
     }
-        printf(1,"8\n");
     if(exec("ls",argv) == 0)
     {
+        printf(1,"8\n");
         goto bad;
     }
-        printf(1,"9\n");
     if(chmod("ls", MODE_RUSR|MODE_WUSR|MODE_XUSR|MODE_ROTH|MODE_XOTH) == -1)
     {
+        printf(1,"9\n");
         goto bad;
     }
     

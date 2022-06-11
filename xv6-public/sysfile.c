@@ -204,6 +204,7 @@ sys_unlink(void)
 {
   struct inode *ip, *dp;
   struct dirent de;
+  struct stat st;
   char name[DIRSIZ], *path;
   uint off;
 
@@ -217,6 +218,13 @@ sys_unlink(void)
   }
 
   ilock(dp);
+  
+  stati(dp, &st);
+  if(!(checkmod(st) & W_OK)){
+    iunlock(dp);
+    end_op();
+    return -1;
+  }
 
   // Cannot unlink "." or "..".
   if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
@@ -262,63 +270,39 @@ create(char *path, short type, short major, short minor)
   struct inode *ip, *dp;
   char name[DIRSIZ];
   struct stat st;
-  char username[MAX_LEN + 1];
 
   if((dp = nameiparent(path, name)) == 0)
     return 0;
-  //cprintf("create: nameiparent success: %s by %s\n", name, dp->owner);
   ilock(dp);
 
-  if((ip = dirlookup(dp, name, 0)) != 0){
-    //cprintf("dirlookup found: %s by %s\n", name, ip->owner);
+  if((ip = dirlookup(dp, name, 0)) != 0){ // File already exists!
     iunlockput(dp);
     ilock(ip);
 
-    if(ltable.userCnt > 0 && ip->type != T_DEV){
-      stati(ip, &st);
-      whoami(username);
-      
-      if(strncmp(username, st.owner, MAX_LEN) == 0){
-        if(!(st.perm & MODE_WUSR)){      
-          return 0;
-        }
-      }
-      else{
-        if(!(st.perm & MODE_WOTH)){      
-          return 0;
-        }
-      }    
-    }
-    //cprintf("create: permission check 1 success: %s %d\n", st.owner, st.perm);
+    if(type == T_FILE && ip->type == T_FILE){
+      if(ltable.userCnt > 0){
+        stati(ip, &st);
 
-    if(type == T_FILE && ip->type == T_FILE)
+        if(!(checkmod(st) & W_OK)){
+          iunlock(ip);
+          return 0;
+        }  
+      }
+      //cprintf("create %s already exists. permission check 1 success: %s\n", name, st.owner);
       return ip;
+    }
     iunlockput(ip);
     return 0;
   }
-  /*
+  
   //cprintf("create: doesn't exist. create %s\n", name);
-  if(ltable.userCnt > 0 && dp->type != T_DEV){
-    stati(dp, &st);
-    whoami(username);
-    //cprintf("create: stat finished. ");
-    //cprintf("owner: %s whoami: %s\n", st.owner, username);
-    if(strncmp((const char*)username, (const char*)st.owner, MAX_LEN) == 0){
-      //cprintf("create: strncmp finished 1.\n");
-      if(!(st.perm & MODE_WUSR)){      
-        return 0;
-      }
-    }
-    else{
-      //cprintf("create: strncmp finished 2.\n");
-      if(!(st.perm & MODE_WOTH)){
-        //cprintf("create: return 0\n");      
-        return 0;
-      }
-    }
+  stati(dp, &st);
+  if(!(checkmod(st) & W_OK)){
+    //cprintf("create %s: permission check 2 failed: %s\n", name, st.owner);
+    iunlock(dp);
+    return 0;
   }
-  */
-  //cprintf("create: permission check 2 success: %d\n", st.perm);
+  //cprintf("create %s: permission check 2 success: %s\n", name, st.owner);
 
   if((ip = ialloc(dp->dev, type)) == 0)
     panic("create: ialloc");
@@ -362,11 +346,10 @@ create(char *path, short type, short major, short minor)
 int
 open(char *path, int omode)
 {
-  int fd;
+  int fd, check;
   struct file *f;
   struct inode *ip;
   struct stat st;
-  char username[MAX_LEN + 1];
 
 
   begin_op();
@@ -377,7 +360,8 @@ open(char *path, int omode)
       end_op();
       return -1;
     }
-  } else {
+  }
+  else {
     if((ip = namei(path)) == 0){
       end_op();
       return -1;
@@ -391,37 +375,31 @@ open(char *path, int omode)
     }
   }
 
-  if(ltable.userCnt > 0 && ip->type != T_DEV){
-    stati(ip, &st);
-    whoami(username);
-    
-    if(strncmp(username, st.owner, MAX_LEN) == 0){
-      if(((omode & O_RDONLY) | (omode & O_RDWR)) && !(st.perm & MODE_RUSR)){      
-        return -1;
-      }
-      if(((omode & O_WRONLY) | (omode & O_RDWR)) && !(st.perm & MODE_WUSR)){      
-        return -1;
-      }
+  stati(ip, &st);
+  check = checkmod(st);
+
+  if(((omode == O_RDONLY) | (omode & O_RDWR))){      
+    if(!(check & R_OK)){
+      iunlock(ip);
+      end_op();
+      return -1;
     }
-    else{
-      if(((omode & O_RDONLY) | (omode & O_RDWR)) && !(st.perm & MODE_ROTH)){      
-        return -1;
-      }
-      if(((omode & O_WRONLY) | (omode & O_RDWR)) && !(st.perm & MODE_WOTH)){      
-        return -1;
-      }
-    }    
   }
-  cprintf("a");
+  if(((omode & O_WRONLY) | (omode & O_RDWR))){      
+    if(!(check & W_OK)){
+      iunlock(ip);
+      end_op();
+      return -1;
+    }
+  }
+
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)
       fileclose(f);
-    cprintf("b");
     iunlockput(ip);
     end_op();
     return -1;
   }
-  cprintf("c");
   iunlock(ip);
   end_op();
 
@@ -446,7 +424,7 @@ sys_open(void)
 }
 
 int
-mkdir(char *path, int mode){
+mkdir(char *path){
   struct inode *ip;
 
   begin_op();
@@ -467,7 +445,7 @@ sys_mkdir(void)
   if(argstr(0, &path) < 0)
     return -1;
 
-  return mkdir(path, 0);
+  return mkdir(path);
 }
 
 int
@@ -496,52 +474,39 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
   struct proc *curproc = myproc();
-  //cprintf("chdir: 0");
+  struct stat st;
   begin_op();
   if(argstr(0, &path) < 0 || (ip = namei(path)) == 0){
     end_op();
     return -1;
   }
-  //cprintf("1");
+  //ip->lock.locked = 0;
   ilock(ip);
+  stati(ip, &st);
   if(ip->type != T_DIR){
+    cprintf("chdir %s: not a directory.\n", path);
+    printstat(st);
     iunlockput(ip);
     end_op();
     return -1;
   }
-  if(curproc->pid > 2){
-    struct stat st;
-    char username[MAX_LEN + 1] = {0};
-    stati(ip, &st);
-    whoami(username);
-    
-    if(strncmp(username, st.owner, MAX_LEN) == 0){
-      if(!(st.perm & MODE_XUSR)){
-        cprintf("Denined access to dir %s\n", path);
-        return -1;
-      }
-    }
-    else{
-      if(!(st.perm & MODE_XOTH)){
-        cprintf("Denined access to dir %s\n", path);
-        return -1;
-      }
-    }
+  if(!(checkmod(st) & X_OK)){
+    iunlock(ip);
+    end_op();
+    return -1;
   }
-  //cprintf("2");
   iunlock(ip);
   iput(curproc->cwd);
   end_op();
   curproc->cwd = ip;
-  //cprintf("3");
   return 0;
 }
 
 int
 sys_exec(void)
 {
-  char *path, *argv[MAXARG];
-  int i;
+  char *path, *argv[MAXARG], rpath[256];
+  int i, result;
   uint uargv, uarg;
 
   if(argstr(0, &path) < 0 || argint(1, (int*)&uargv) < 0){
@@ -560,7 +525,19 @@ sys_exec(void)
     if(fetchstr(uarg, &argv[i]) < 0)
       return -1;
   }
-  return exec(path, argv);
+  result = exec(path, argv);
+  if(result != -1){
+    return result;
+  }
+  else if(path[0] != '.'){
+    rpath[0] = '/';
+    strncpy(rpath + 1, path, strlen(path));
+    rpath[strlen(path) + 1] = 0;
+    return exec(rpath, argv);
+  }
+  else{
+    return -1;
+  }
 }
 
 int
@@ -706,7 +683,7 @@ int deleteUser(char *username){
   for(int i = 0; i < ltable.userCnt; i++){
     if(strlen(ltable.usernames[i]) != strlen(username))
       continue;
-    if(strncmp(ltable.usernames[i], username, strlen(ltable.usernames[i])) == 0){
+    if(equals(ltable.usernames[i], username)){
       found = i;
       if(!found)
         cprintf("Denined attempt to delete root user\n");
@@ -749,8 +726,7 @@ int addUser(char *username, char *password){
   }
 
   for(int i = 0; i < ltable.userCnt; i++){
-    if(strncmp(ltable.usernames[i], username, strlen(ltable.usernames[i])) == 0
-    && (strlen(ltable.usernames[i]) == strlen(username))){
+    if(equals(ltable.usernames[i], username)){
       return -1; // Username already exists!
     }
   }
@@ -765,13 +741,7 @@ int addUser(char *username, char *password){
     return -1;
   }
 
-  //int temp = ltable.userIdx;
-  //ltable.userIdx = ltable.userCnt;
-  if(mkdir(username, 1) < 0){
-    deleteUser(username);
-    return -1;
-  }
-  //ltable.userIdx = temp;
+  mkdir(username);
 
   struct inode *ip;
   if((ip = namei(username)) == 0){
@@ -792,7 +762,7 @@ int addUser(char *username, char *password){
 void whoami(char *dst){
   char *src;
   int len;
-  if(ltable.userCnt < 0){
+  if(ltable.userCnt == 0){
     strncpy(dst, (const char*)"root", 4);
     dst[4] = 0;
     return;
@@ -861,7 +831,7 @@ int sys_login(void){
   for(int i = 0; i < ltable.userCnt; i++){
     if(strlen(ltable.usernames[i]) != strlen(username))
       continue;
-    if(strncmp(ltable.usernames[i], username, strlen(username)) == 0){
+    if(equals(ltable.usernames[i], username)){
       found = i;
       break;
     }
@@ -872,8 +842,7 @@ int sys_login(void){
     return -1;
   }
 
-  if(strncmp(ltable.passwords[found], password, strlen(password)) == 0
-  && (strlen(ltable.passwords[found]) == strlen(password))){
+  if(equals(ltable.passwords[found], password)){
     cprintf("login successful\n");
     ltable.userIdx = found;
     return 0;
@@ -911,9 +880,17 @@ sys_chmod(void)
   stati(ip, &st);
   whoami(curUser);
 
-  if(strncmp(st.owner, "root", MAX_LEN) != 0 && strncmp(st.owner, curUser, MAX_LEN) != 0){
+  if(st.type == T_DEV){
     iunlock(ip);
     end_op();
+    printstat(st);
+    return -1;
+  }
+
+  if(!equals("root", curUser) && !equals(st.owner, curUser)){
+    iunlock(ip);
+    end_op();
+    printstat(st);
     return -1;
   }
 
@@ -922,4 +899,76 @@ sys_chmod(void)
   iunlock(ip);
   end_op();
   return 0;
+}
+
+void printstat(struct stat st){
+  int p = st.perm;
+  char perm[7];
+
+  if(p & MODE_RUSR)
+    perm[0] = 'r';
+  else
+    perm[0] = '-';
+  if(p & MODE_WUSR)
+    perm[1] = 'w';
+  else
+    perm[1] = '-';
+  if(p & MODE_XUSR)
+    perm[2] = 'x';
+  else
+    perm[2] = '-';
+  if(p & MODE_ROTH)
+    perm[3] = 'r';
+  else
+    perm[3] = '-';
+  if(p & MODE_WOTH)
+    perm[4] = 'w';
+  else
+    perm[4] = '-';
+  if(p & MODE_XOTH)
+    perm[5] = 'x';
+  else
+    perm[5] = '-';
+  perm[6] = 0;
+
+  cprintf("[stat] owner: %s / mode: %s / type: ", st.owner, perm);
+  if(st.type == T_DIR)
+    cprintf("T_DIR");
+  if(st.type == T_FILE)
+    cprintf("T_FILE");
+  if(st.type == T_DEV)
+    cprintf("T_DEV");
+  cprintf("\n");
+}
+
+int checkmod(struct stat st){
+
+  int perm = st.perm, result = 0;
+  const char *owner = st.owner;
+  char username[MAX_LEN + 1];
+
+  if(st.type == T_DEV){
+    return R_OK | W_OK | X_OK;
+  }
+
+  whoami(username);
+  //cprintf("owner: %s current user: %s\n", owner, username);
+  if(equals(owner, username)){ // owner == current user
+    if(perm & MODE_RUSR)
+      result |= R_OK;
+    if(perm & MODE_WUSR)
+      result |= W_OK;
+    if(perm & MODE_XUSR)
+      result |= X_OK;
+  }
+  else{ // owner != current user
+    if(perm & MODE_ROTH)
+      result |= R_OK;
+    if(perm & MODE_WOTH)
+      result |= W_OK;
+    if(perm & MODE_XOTH)
+      result |= X_OK;
+  }
+
+  return result;
 }

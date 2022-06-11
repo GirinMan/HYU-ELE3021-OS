@@ -118,6 +118,7 @@ extern int sys_deleteUser(void);
 extern int sys_login(void);
 extern int sys_whoami(void);
 extern int sys_chmod(void);
+extern int sys_conswtch(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]        sys_fork,
@@ -156,6 +157,7 @@ static int (*syscalls[])(void) = {
 [SYS_login]       sys_login,
 [SYS_whoami]      sys_whoami,
 [SYS_chmod]       sys_chmod,
+[SYS_conswtch]    sys_conswtch,
 };
 
 void

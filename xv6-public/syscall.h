@@ -35,3 +35,4 @@
 #define SYS_login           34
 #define SYS_whoami          35
 #define SYS_chmod           36
+#define SYS_conswtch        37

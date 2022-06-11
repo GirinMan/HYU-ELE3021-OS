@@ -34,6 +34,64 @@ static void setperm(int p){
 }
 
 char*
+fmtsz(uint sz)
+{
+  char* result;
+  uint t;
+  char rest = 0;
+  char unit = 0;
+  char need_to_print_rest = 0;
+  uint num_chars = 2;
+
+  if(sz >> 30) {
+    unit = 'G';
+    need_to_print_rest = (sz & ((1 << 30) - 1)) != 0;
+    rest = (sz & ((1 << 30) - 1)) / 10 % 10;
+    sz = sz >> 30;
+  }
+  else if(sz >> 20) {
+    unit = 'M';
+    need_to_print_rest = (sz & ((1 << 20) - 1)) != 0;
+    rest = (sz & ((1 << 20) - 1)) / 10 % 10;
+    sz = sz >> 20;
+  }
+  else if(sz >> 10) {
+    unit = 'K';
+    need_to_print_rest = (sz & ((1 << 10) - 1)) != 0;
+    rest = (sz & ((1 << 10) - 1)) / 10 % 10;
+    sz = sz >> 10;
+  }
+
+  t = sz;
+  do ++num_chars;
+  while((t /= 10));
+
+  if(unit)
+    num_chars += 1;
+
+  if(need_to_print_rest)
+    num_chars += 2;
+
+  result = malloc(num_chars);
+  if(result){
+    result[--num_chars] = 0;
+    result[--num_chars] = 'B';
+    if(unit) result[--num_chars] = unit;
+    if(need_to_print_rest){
+      result[--num_chars] = '0' + rest;
+      result[--num_chars] = '.';
+    }
+    t = sz;
+    do {
+      result[--num_chars] = '0' + (t % 10);
+    }while((t /= 10));
+    if(num_chars > 0)
+      printf(1, "fail %d\n", num_chars);
+  }
+  return result;
+}
+
+char*
 fmtname(char *path)
 {
   static char buf[DIRSIZ+1];
@@ -74,8 +132,9 @@ ls(char *path)
   switch(st.type){
   case T_FILE:
     setperm(st.perm);
-    printf(1, "%s -%s  %d %d %d   \t%s\n", 
-      fmtname(path), perm, st.type, st.ino, st.size, st.owner);
+    char* sz_str = fmtsz(st.size);
+    printf(1, "%s -%s %d %d %s     \t%s\n", fmtname(path), perm, st.type, st.ino, sz_str, st.owner);
+    free(sz_str);
     break;
 
   case T_DIR:
@@ -97,17 +156,20 @@ ls(char *path)
       }
       if(st.type == T_FILE){
         setperm(st.perm);
-        printf(1, "%s -%s  %d %d %d   \t%s\n", 
-          fmtname(buf), perm, st.type, st.ino, st.size, st.owner);
+        char* sz_str = fmtsz(st.size);
+        printf(1, "%s -%s %d %d %s     \t%s\n", fmtname(buf), perm, st.type, st.ino, sz_str, st.owner);
+        free(sz_str);
       }
       else if(st.type == T_DIR){
         setperm(st.perm);
-        printf(1, "%s d%s  %d %d %d   \t%s\n", 
-          fmtname(buf), perm, st.type, st.ino, st.size, st.owner);
+        char* sz_str = fmtsz(st.size);
+        printf(1, "%s d%s %d %d %s     \t%s\n", fmtname(buf), perm, st.type, st.ino, sz_str, st.owner);
+        free(sz_str);
       }
       else{
-        printf(1, "%s -------  %d %d %d\n", 
-          fmtname(buf), st.type, st.ino, st.size);
+        char* sz_str = fmtsz(st.size);
+        printf(1, "%s *DEVICE %d %d %s     \t%s\n", fmtname(buf), st.type, st.ino, sz_str, st.owner);
+        free(sz_str);
       }
     }
     break;

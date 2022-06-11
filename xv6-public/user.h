@@ -38,6 +38,7 @@ int deleteUser(char *username);
 int login(char *username, char *password);
 void whoami(void);
 int chmod(char *pathname, int mode);
+void conswtch(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -66,3 +66,7 @@ struct dirent {
 #define MODE_ROTH 4 // others read
 #define MODE_WOTH 2 // others write
 #define MODE_XOTH 1 // others execute
+
+#define R_OK 4  // Read permission checked
+#define W_OK 2  // Write permission checked
+#define X_OK 1  // Execute permission checked

@@ -24,6 +24,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc;
+  struct stat st;
 
   curproc = myproc();
 
@@ -39,30 +40,18 @@ exec(char *path, char **argv)
 
   if((ip = namei(path)) == 0){
     end_op();
-    cprintf("exec: fail\n");
     return -1;
   }
   ilock(ip);
   pgdir = 0;
 
 
-  if(ip->type != T_DEV && curproc->pid > 2){
-    struct stat st;
-    char username[MAX_LEN + 1] = {0};
+  if(curproc->pid > 2){
     stati(ip, &st);
-    whoami(username);
-    
-    if(strncmp(username, st.owner, MAX_LEN) == 0){
-      if(!(st.perm & MODE_XUSR)){
-        cprintf("Denined access to exec %s\n", path);
-        goto bad;
-      }
-    }
-    else{
-      if(!(st.perm & MODE_XOTH)){
-        cprintf("Denined access to exec %s\n", path);
-        goto bad;
-      }
+
+    if(!(checkmod(st) & X_OK)){
+      //cprintf("Denined access to exec %s\n", path);
+      goto bad;
     }
   }
 

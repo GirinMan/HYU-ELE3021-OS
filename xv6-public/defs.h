@@ -57,6 +57,8 @@ int             cleari(struct inode *ip);
 
 // sysfile.c
 void            whoami(char *dst);
+void            printstat(struct stat st);
+int             checkmod(struct stat st);
 
 // ide.c
 void            ideinit(void);
@@ -167,6 +169,7 @@ char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
+int             equals(const char *, const char*);
 
 // syscall.c
 int             argint(int, int*);

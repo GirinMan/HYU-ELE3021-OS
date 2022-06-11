@@ -222,6 +222,7 @@ UPROGS=\
 	_userdelete\
 	_chmod\
 	_modtest\
+	_pwd\
 	
 	
 
@@ -293,7 +294,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c my_userapp.c\
+	printf.c umalloc.c pwd.c my_userapp.c\
 	project01.c\
 	login.c useradd.c userdelete.c chmod.c modtest.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\

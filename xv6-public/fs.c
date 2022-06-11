@@ -664,6 +664,7 @@ static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
+  struct stat st;
 
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
@@ -676,23 +677,13 @@ namex(char *path, int nameiparent, char *name)
       iunlockput(ip);
       return 0;
     }
-    if(ip->type != T_DEV && myproc()->pid > 2){
-      struct stat st;
-      char username[MAX_LEN + 1] = {0};
+    if(myproc()->pid > 2){
       stati(ip, &st);
-      whoami(username);
       
-      if(strncmp(username, st.owner, MAX_LEN) == 0){
-        if(!(st.perm & MODE_XUSR)){
-          cprintf("Denined access to namex %s\n", path);
-          return 0;
-        }
-      }
-      else{
-        if(!(st.perm & MODE_XOTH)){
-          cprintf("Denined access to namex %s\n", path);
-          return 0;
-        }
+      if(!(checkmod(st) & X_OK)){
+        //cprintf("Denined access to namex %s\n", path);
+        iunlockput(ip);
+        return 0;
       }
     }
     if(nameiparent && *path == '\0'){

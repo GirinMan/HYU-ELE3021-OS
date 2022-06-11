@@ -44,5 +44,6 @@ SYSCALL(deleteUser)
 SYSCALL(login)
 SYSCALL(whoami)
 SYSCALL(chmod)
+SYSCALL(conswtch)
 
 

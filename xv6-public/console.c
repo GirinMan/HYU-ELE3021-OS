@@ -128,6 +128,13 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
+static int visible = 1;
+
+int sys_conswtch(){
+  visible = !visible;
+  return 0;
+}
+
 static void
 cgaputc(int c)
 {
@@ -173,8 +180,11 @@ consputc(int c)
 
   if(c == BACKSPACE){
     uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
+  } else{
+    if(!visible && c != '\n')
+      c = '*';
     uartputc(c);
+  }
   cgaputc(c);
 }
 

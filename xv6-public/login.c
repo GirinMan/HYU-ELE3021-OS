@@ -20,8 +20,10 @@ main(void)
         username[strlen(username) - 1] = 0;
 
         printf(1, "Enter password: ");
+        conswtch();
         gets(password, sizeof password);
         password[strlen(password) - 1] = 0;
+        conswtch();
 
         if(strlen(username) > MAX_LEN || strlen(password) > MAX_LEN){
             printf(1, "Usernames and passwords must be >1 and <16 characters\n");
