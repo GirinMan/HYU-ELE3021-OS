@@ -728,6 +728,7 @@ int addUser(char *username, char *password){
 
   for(int i = 0; i < ltable.userCnt; i++){
     if(equals(ltable.usernames[i], username)){
+      cprintf("Username %s already exists!\n", ltable.usernames[i]);
       return -1; // Username already exists!
     }
   }
@@ -742,7 +743,7 @@ int addUser(char *username, char *password){
     return -1;
   }
 
-  mkdir(username);
+  if(ltable.userCnt != 1) mkdir(username);
 
   struct inode *ip;
   if((ip = namei(username)) == 0){
@@ -954,7 +955,7 @@ int checkmod(struct stat st){
 
   whoami(username);
   //cprintf("owner: %s current user: %s\n", owner, username);
-  if(equals(owner, username)){ // owner == current user
+  if(equals(owner, username) || equals("root", username)){ // current user is either owner or root
     if(perm & MODE_RUSR)
       result |= R_OK;
     if(perm & MODE_WUSR)

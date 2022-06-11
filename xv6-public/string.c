@@ -104,8 +104,8 @@ strlen(const char *s)
 }
 
 int equals(const char *s1, const char *s2){
-  if(strlen(s1) != strlen(s2) || strncmp(s1, s2, strlen(s1) != 0))
-    return 0;
-  else
+  if((strlen(s1) == strlen(s2)) && (strncmp(s1, s2, strlen(s1)) == 0))
     return 1;
+  else
+    return 0;
 }
