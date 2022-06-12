@@ -702,7 +702,10 @@ int deleteUser(char *username){
     ltable.passwords[i-1][strlen(ltable.passwords[i])] = 0;
   }
   ltable.userCnt--;
-  ltable.usernames[ltable.userCnt][0] = ltable.passwords[ltable.userCnt][0] = 0;
+  for(int i = 0; i < MAX_LEN + 1; i++){
+    ltable.usernames[ltable.userCnt][i] = ltable.passwords[ltable.userCnt][i] = 0;
+  }
+  
 
   if(flushUsers() < 0){
     return -1;
@@ -743,7 +746,7 @@ int addUser(char *username, char *password){
     return -1;
   }
 
-  if(ltable.userCnt != 1) mkdir(username);
+  if(ltable.userCnt > 1) mkdir(username);
 
   struct inode *ip;
   if((ip = namei(username)) == 0){
@@ -859,7 +862,7 @@ int sys_whoami(void){
   char dst[MAX_LEN + 1];
 
   whoami(dst);
-  cprintf("%s\n", dst);
+  cprintf("%s", dst);
   return 0;
 }
 
