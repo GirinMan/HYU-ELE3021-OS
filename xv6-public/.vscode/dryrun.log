@@ -1,0 +1,5 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/mnt/c/Users/USER/Repos/OS/xv6-public'
+make: 'xv6.img' is up to date.
+make: Leaving directory '/mnt/c/Users/USER/Repos/OS/xv6-public'
+ 
